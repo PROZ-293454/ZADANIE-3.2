@@ -1,0 +1,523 @@
+Kod studenta: Kacper Kaczmarek 293458
+Inspekcję zrealizował: Marcin Hanas 293454
+
+1. Klasa Main:
+
+	PROBLEM:
+	Metoda start klasy Main jest zbyt długa, może zostać rozbita na mniejsze prywatne metody - setPlayer, showStage, showPlayerAlert, które będą w niej wywoływane. Dodatkowo parametr wywołania metody arg0 ma nieodpowiednią nazwę, została więc zamieniona na "stage".
+	
+	@Override
+	public void start(Stage arg0) throws Exception 
+	{
+		try
+		{
+			// ustawianie gracza w zaleznosci od argumnetu
+			List<String> arguments = getParameters().getRaw();
+			if ( arguments.size() != 1  )
+			{
+				AlertBox.show(AlertType.ERROR, "GRACZ", "Podano zle argumenty", "Wybierz gracza podajac w konsoli 1 - dla gracza czerwonego, 0 - dla gracza bialego", ButtonType.OK);
+				return;
+			}
+			else if ( arguments.get(0).equals("0") )
+				player = Piece.Color.WHITE;
+			else if (arguments.get(0).equals("1") )
+				player = Piece.Color.RED;
+			else
+			{
+				AlertBox.show(AlertType.ERROR, "GRACZ", "Źle wybrano gracza", "Wybierz gracza podajac w konsoli 1 - dla gracza czerwonego, 0 - dla gracza bialego", ButtonType.OK);
+				return;
+			}
+				
+			ViewLoader<GridPane, BoardController> viewLoader = new ViewLoader<GridPane, BoardController>("view/Board.fxml");
+			GridPane gridPane = viewLoader.getLayout();
+			BoardController boardController = viewLoader.getController();
+			boardController.setPlayer( player );
+			boardController.init();
+			Scene scene = new Scene(gridPane);
+			arg0.setScene(scene);
+			arg0.setTitle("Checkers");
+			arg0.show();
+			if ( player == Piece.Color.RED )
+				AlertBox.show(AlertType.INFORMATION, "GRACZ", "Gra gracz czerwony", "", ButtonType.OK);
+			else
+				AlertBox.show(AlertType.INFORMATION, "GRACZ", "Gra gracz biały", "", ButtonType.OK);
+		}
+		catch (Exception e) 
+		{
+			e.printStackTrace();
+		}
+	}
+	
+	ROZWIĄZANIE:
+		@Override
+	public void start(Stage stage) throws Exception {
+		try {
+			// ustawianie gracza w zaleznosci od argumentu
+			List<String> arguments = getParameters().getRaw();
+
+			// KOREKTA: prawdzenie, czy udało się ustawić gracza, jeśli nie, zakończenie działania metody
+			boolean arePlayersSet = setPlayer(arguments);
+			if (arePlayersSet == false)
+				return;
+
+			ViewLoader<GridPane, BoardController> viewLoader = new ViewLoader<GridPane, BoardController>(
+					"view/Board.fxml");
+			GridPane gridPane = viewLoader.getLayout();
+			BoardController boardController = viewLoader.getController();
+			boardController.setPlayer(player);
+			boardController.init();
+			Scene scene = new Scene(gridPane);
+			showStage(stage, scene);
+			showPlayerAlert();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	// KOREKTA: metoda ustalająca kolor gracza
+	private static boolean setPlayer(List<String> players) {
+		if (players.size() != 1) {
+			AlertBox.show(AlertType.ERROR, "GRACZ", "Podano zle argumenty",
+					"Wybierz gracza podajac w konsoli 1 - dla gracza czerwonego, 0 - dla gracza bialego",
+					ButtonType.OK);
+			return false;
+		} else if (players.get(0).equals("0")) {
+			player = Piece.Color.WHITE;
+			return true;
+		} else if (players.get(0).equals("1")) {
+			player = Piece.Color.RED;
+			return true;
+		} else {
+			AlertBox.show(AlertType.ERROR, "GRACZ", "Źle wybrano gracza",
+					"Wybierz gracza podajac w konsoli 1 - dla gracza czerwonego, 0 - dla gracza bialego",
+					ButtonType.OK);
+			return false;
+		}
+	}
+	// KOREKTA: metoda ustawiająca stage
+	private void showStage(Stage stage, Scene scene) {
+		stage.setScene(scene);
+		stage.setTitle("Checkers");
+		stage.show();
+	}
+	
+	// KOREKTA: metoda pokazująca okno z informacją o graczu
+	private void showPlayerAlert() {
+		if (player == Piece.Color.RED)
+			AlertBox.show(AlertType.INFORMATION, "GRACZ", "Gra gracz czerwony", "", ButtonType.OK);
+		else
+			AlertBox.show(AlertType.INFORMATION, "GRACZ", "Gra gracz biały", "", ButtonType.OK);
+	}
+}
+
+2. Klasa AlertBox
+	PROBLEM:
+	W klasie występują dwa konstruktory i jedna metoda, która jest statyczna. W tej sytuacji nie będzie potrzeby tworzenia obiektu tej klasy, niepotrzebne są więc oba konstruktory oraz pole niestatyczne. Bardziej logiczna wydaje się jednak zmiana tej metody na niestatycznego i usunięcie z niej tworzenia nowego obiektu typu Alert - będzie on tworzony w konstruktorze zawierającym argumenty. Bezcelowe jest tworzenie alertów bez żadnej informacji w nich zawartej, więc konstruktor bezargumentowy nie jest potrzebny. W związku z tym można go usunąć, pozostawiając konstruktor z argumentami.
+	
+	public class AlertBox 
+	{
+		private Alert alert;
+		
+		/**
+		 * Bezargumnetowy konstrukotr klasy AlertBox nic nie robi
+		 */
+		public AlertBox()
+		{
+			
+		}
+		/**
+		 * Argumentowy konstrukotr klasy AlertBox ustawia potrzebne dane na miejsca
+		 * @param type Typ alertu
+		 * @param title Tytul alertu
+		 * @param headerText Tytul naglowka
+		 * @param text Tekst alertu
+		 * @param button Typ przycisku w alercie
+		 */
+		public AlertBox( AlertType type, String title, String headerText, String text, ButtonType button )
+		{
+			alert = new Alert( type, text, button );
+			alert.setTitle(title);
+			alert.setHeaderText(headerText);
+			alert.showAndWait();
+		}
+		/**
+		 * Metoda ustawia parametry alertu i go wyswietla
+		 * @param type Typ alertu
+		 * @param title Tytul alertu
+		 * @param headerText Tytul naglowka
+		 * @param text Tekst alertu
+		 * @param button Typ przycisku w alercie
+		 */
+		public static void show( AlertType type, String title, String headerText, String text, ButtonType button )
+		{
+			Alert alert = new Alert( type, text, button );
+			alert.setTitle(title);
+			alert.setHeaderText(headerText);
+			alert.showAndWait();
+		}
+	}
+		
+	ROZWIĄZANIE:
+	public class AlertBox {
+		private Alert alert;
+
+		/**
+		 * Argumentowy konstrukotr klasy AlertBox ustawia potrzebne dane na miejsca
+		 * 
+		 * @param type       Typ alertu
+		 * @param title      Tytul alertu
+		 * @param headerText Tytul naglowka
+		 * @param text       Tekst alertu
+		 * @param button     Typ przycisku w alercie
+		 */
+		public AlertBox(AlertType type, String title, String headerText, String text, ButtonType button) {
+			alert = new Alert(type, text, button);
+			alert.setTitle(title);
+			alert.setHeaderText(headerText);
+			alert.showAndWait();
+		}
+
+		/**
+		 * Metoda ustawia parametry alertu i go wyswietla
+		 */
+		public void show() {
+			alert.showAndWait();
+		}
+	}
+	
+	W miejscach kodu, gdzie użyto funkcji AlertBox.show(...), należy zamiast tego najpierw utworzyć obiekt typu AlertBox wykorzystując te same parametry, co wcześniej w funkcji show, a później wywołać metodę show tego obiektu.
+	
+3. Klasa Piece:
+	PROBLEM:
+	Zmienne klasy Piece zgodnie z konwencją powinny być prywatne, a dostęp do nich powinien być możliwy przez gettery i settery. Metoda Move ma niepoprawną nazwę - jest z wielkiej litery i nie tłumaczy dokładnie, co robi, jest więc zmieniona na "changeCoordinates". Metody moveKing i movePiece zostały rozbite na mniejsze metody, oraz usunięty został niepotrzebny argument 
+	
+	
+	public class Piece 
+	{
+		int x;
+		int y;
+		public enum Type {MAN, KING};
+		public enum Color {WHITE, RED};
+		Color color;
+		Type type;
+		boolean isActive;
+		
+		public void Move(int x, int y)
+		{
+			this.x = x;
+			this.y = y;
+		}
+		
+		public Type setKing(ImageView[][] imageViewsPieces)
+		{
+			if ( color == Piece.Color.WHITE )
+			{
+				imageViewsPieces[this.getX()][this.getY()].setImage(new Image("/WhiteKing.png", true));
+			}
+			else
+			{
+				imageViewsPieces[this.getX()][this.getY()].setImage(new Image("/RedKing.png", true));
+			}
+			
+			type = KING;
+			return type;
+		}
+		
+		
+		public void movePiece ( int[] pieceCoordinates, int[] coordinates, ImageView[][] imageViewsFields, ImageView[][] imageViewsPieces, Field[][] fields, Piece[][] pieces, GridPane gridPane )
+		{
+			
+			gridPane.getChildren().remove(imageViewsPieces[pieceCoordinates[0]][pieceCoordinates[1]]);
+			gridPane.add(imageViewsPieces[pieceCoordinates[0]][pieceCoordinates[1]], coordinates[0], coordinates[1]);
+			imageViewsPieces[coordinates[0]][coordinates[1]] = imageViewsPieces[pieceCoordinates[0]][pieceCoordinates[1]];
+			imageViewsPieces[pieceCoordinates[0]][pieceCoordinates[1]] = null;
+			pieces[coordinates[0]][coordinates[1]] = pieces[pieceCoordinates[0]][pieceCoordinates[1]];
+			pieces[pieceCoordinates[0]][pieceCoordinates[1]] = null;
+			if ( Math.abs(pieceCoordinates[0] - coordinates[0]) == 2 )
+			{
+				int[] hitCoordinates = new int[2];
+				if ( pieceCoordinates[0] > coordinates[0] )
+				{
+					hitCoordinates[0] = coordinates[0] + 1;
+				}
+				else
+				{
+					hitCoordinates[0] = coordinates[0] - 1;
+				}
+				if ( pieceCoordinates[1] > coordinates[1] )
+				{
+					hitCoordinates[1] = coordinates[1] + 1;
+				}
+				else
+				{
+					hitCoordinates[1] = coordinates[1] - 1;
+				}
+				fields[hitCoordinates[0]][hitCoordinates[1]].setPiece(null);
+				pieces[hitCoordinates[0]][hitCoordinates[1]] = null;
+				gridPane.getChildren().remove(imageViewsPieces[hitCoordinates[0]][hitCoordinates[1]]);
+			}
+			Field.imageChangeBlack(imageViewsFields, fields);
+			fields[pieceCoordinates[0]][pieceCoordinates[1]].setPiece(null);
+			fields[coordinates[0]][coordinates[1]].setPiece(this);
+			Move(coordinates[0], coordinates[1]);
+			if ( (coordinates[1] == 7 || coordinates[1] == 0 ) && pieces[coordinates[0]][coordinates[1]].getType() == Piece.Type.MAN )
+			{
+				pieces[coordinates[0]][coordinates[1]].setKing(imageViewsPieces);
+			}
+			setActive(false);
+		}
+		public void moveKing  ( int[] pieceCoordinates, int[] coordinates, ImageView[][] imageViewsFields, ImageView[][] imageViewsPieces, Field[][] fields, Piece[][] pieces, GridPane gridPane )
+		{
+			int counter = 0;
+			gridPane.getChildren().remove(imageViewsPieces[pieceCoordinates[0]][pieceCoordinates[1]]);
+			gridPane.add(imageViewsPieces[pieceCoordinates[0]][pieceCoordinates[1]], coordinates[0], coordinates[1]);
+			imageViewsPieces[coordinates[0]][coordinates[1]] = imageViewsPieces[pieceCoordinates[0]][pieceCoordinates[1]];
+			imageViewsPieces[pieceCoordinates[0]][pieceCoordinates[1]] = null;
+			pieces[coordinates[0]][coordinates[1]] = pieces[pieceCoordinates[0]][pieceCoordinates[1]];
+			pieces[pieceCoordinates[0]][pieceCoordinates[1]] = null;
+			// bice
+			if ( Math.abs(pieceCoordinates[0] - coordinates[0]) > 1 )
+			{
+				int[][] hitCoordinates = new int[5][2];
+				if ( pieceCoordinates[0] > coordinates[0] && pieceCoordinates[1] > coordinates[1] )
+				{
+					for ( int i = coordinates[0]+1, j = coordinates[1]+1; i < pieceCoordinates[0] ; i++, j++ )
+					{
+						hitCoordinates[counter][0] = i;
+						hitCoordinates[counter][1] = j;
+						counter++;
+					}
+				}
+				if ( pieceCoordinates[0] < coordinates[0] && pieceCoordinates[1] > coordinates[1] )
+				{
+					for ( int i = coordinates[0]-1, j = coordinates[1]+1; i > pieceCoordinates[0] ; i--, j++ )
+					{
+						hitCoordinates[counter][0] = i;
+						hitCoordinates[counter][1] = j;
+						counter++;
+					}
+				}
+				if ( pieceCoordinates[0] < coordinates[0] && pieceCoordinates[1] < coordinates[1] )
+				{
+					for ( int i = coordinates[0]-1, j = coordinates[1]-1; i > pieceCoordinates[0] ; i--, j-- )
+					{
+						hitCoordinates[counter][0] = i;
+						hitCoordinates[counter][1] = j;
+						counter++;
+					}
+				}
+				if ( pieceCoordinates[0] > coordinates[0] && pieceCoordinates[1] < coordinates[1] )
+				{
+					for ( int i = coordinates[0]+1, j = coordinates[1]-1; i < pieceCoordinates[0] ; i++, j-- )
+					{
+						hitCoordinates[counter][0] = i;
+						hitCoordinates[counter][1] = j;
+						counter++;
+					}
+				}
+				for ( int i = 0 ;  i < counter ; i++ )
+				{
+					System.out.println(hitCoordinates[i][0]);
+					System.out.println(hitCoordinates[i][1]);
+					if ( fields[hitCoordinates[i][0]][hitCoordinates[i][1]].isPiece() )
+					{
+						fields[hitCoordinates[i][0]][hitCoordinates[i][1]].setPiece(null);
+						pieces[hitCoordinates[i][0]][hitCoordinates[i][1]] = null;
+						gridPane.getChildren().remove(imageViewsPieces[hitCoordinates[i][0]][hitCoordinates[i][1]]);
+					}
+				}
+			}
+			Field.imageChangeBlack(imageViewsFields, fields);
+			fields[pieceCoordinates[0]][pieceCoordinates[1]].setPiece(null);
+			fields[coordinates[0]][coordinates[1]].setPiece(this);
+			Move(coordinates[0], coordinates[1]);
+			setActive(false);
+		}
+	}
+	
+	
+	
+	ROZWIĄZANIE:
+	public class Piece {
+		private int x;
+		private int y;
+
+		public enum Type {
+			MAN, KING
+		};
+
+		public enum Color {
+			WHITE, RED
+		};
+
+		private Color color;
+		private Type type;
+		private boolean isActive;
+
+		
+
+		public void changeCoordinates(int x, int y) {
+			this.x = x;
+			this.y = y;
+		}
+
+		public Type setKing(ImageView[][] imageViewsPieces) {
+			if (color == Piece.Color.WHITE) {
+				imageViewsPieces[this.getX()][this.getY()].setImage(new Image("/WhiteKing.png", true));
+			} else {
+				imageViewsPieces[this.getX()][this.getY()].setImage(new Image("/RedKing.png", true));
+			}
+
+			type = KING;
+			return type;
+		}
+
+	public void movePiece(int[] coordinates, ImageView[][] imageViewsFields, ImageView[][] imageViewsPieces,
+			Field[][] fields, Piece[][] pieces, GridPane gridPane) {
+		int x2 = coordinates[0];
+		int y2 = coordinates[1];
+		setMove(x2, y2, imageViewsPieces, pieces, gridPane);
+
+		// bicie
+		makeJump(coordinates, imageViewsPieces, fields, pieces, gridPane);
+		setFieldWithoutPiece(x2, y2, imageViewsFields, fields);
+
+		setKing(coordinates, pieces, imageViewsPieces);
+		setActive(false);
+	}
+	
+	public void moveKing(int[] coordinates, ImageView[][] imageViewsFields, ImageView[][] imageViewsPieces,
+			Field[][] fields, Piece[][] pieces, GridPane gridPane) {
+		int counter = 0;
+		int x2 = coordinates[0];
+		int y2 = coordinates[1];
+		setMove(x2, y2, imageViewsPieces, pieces, gridPane);
+		// bicie
+		makeKingJump(counter, coordinates, imageViewsPieces, fields, pieces, gridPane);
+		setFieldWithoutPiece(x2, y2, imageViewsFields, fields);
+
+		setActive(false);
+	}
+	
+	private void setMove(int x2, int y2, ImageView[][] imageViewsPieces, Piece[][] pieces, GridPane gridPane) {
+		gridPane.getChildren().remove(imageViewsPieces[x][y]);
+		gridPane.add(imageViewsPieces[x][y], x2, y2);
+		imageViewsPieces[x2][y2] = imageViewsPieces[x][y];
+		imageViewsPieces[x][y] = null;
+		pieces[x2][y2] = pieces[x][y];
+		pieces[x][y] = null;
+	}
+
+	private void makeJump(int[] coordinates, ImageView[][] imageViewsPieces, Field[][] fields, Piece[][] pieces,
+			GridPane gridPane) {
+		int x2 = coordinates[0];
+		int y2 = coordinates[1];
+		if (Math.abs(x - x2) == 2) {
+			int[] hitCoordinates = new int[2];
+			if (x > x2) {
+				hitCoordinates[0] = x2 + 1;
+			} else {
+				hitCoordinates[0] = x2 - 1;
+			}
+			if (y > y2) {
+				hitCoordinates[1] = y2 + 1;
+			} else {
+				hitCoordinates[1] = y2 - 1;
+			}
+			fields[hitCoordinates[0]][hitCoordinates[1]].setPiece(null);
+			pieces[hitCoordinates[0]][hitCoordinates[1]] = null;
+			gridPane.getChildren().remove(imageViewsPieces[hitCoordinates[0]][hitCoordinates[1]]);
+		}
+	}
+
+	private void setKing(int[] coordinates, Piece[][] pieces, ImageView[][] imageViewsPieces) {
+		int x2 = coordinates[0];
+		int y2 = coordinates[1];
+		if ((y2 == 7 || y2 == 0) && pieces[x2][y2].getType() == Piece.Type.MAN) {
+			pieces[x2][y2].setKing(imageViewsPieces);
+		}
+	}
+
+	private void setFieldWithoutPiece(int x2, int y2, ImageView[][] imageViewsFields, Field[][] fields) {
+		Field.imageChangeBlack(imageViewsFields, fields);
+		fields[x][y].setPiece(null);
+		fields[x2][y2].setPiece(this);
+		changeCoordinates(x2, y2);
+	}
+
+	private void makeKingJump(int counter, int[] coordinates, ImageView[][] imageViewsPieces, Field[][] fields,
+			Piece[][] pieces, GridPane gridPane) {
+		int x2 = coordinates[0];
+		int y2 = coordinates[1];
+		if (Math.abs(x - x2) > 1) {
+			int[][] hitCoordinates = new int[5][2];
+			if (x > x2 && y > y2) {
+				for (int i = x2 + 1, j = y2 + 1; i < x; i++, j++) {
+					hitCoordinates[counter][0] = i;
+					hitCoordinates[counter][1] = j;
+					counter++;
+				}
+			}
+			if (x < x2 && y > y2) {
+				for (int i = x2 - 1, j = y2 + 1; i > x; i--, j++) {
+					hitCoordinates[counter][0] = i;
+					hitCoordinates[counter][1] = j;
+					counter++;
+				}
+			}
+			if (x < x2 && y < y2) {
+				for (int i = x2 - 1, j = y2 - 1; i > x; i--, j--) {
+					hitCoordinates[counter][0] = i;
+					hitCoordinates[counter][1] = j;
+					counter++;
+				}
+			}
+			if (x > x2 && y < y2) {
+				for (int i = x2 + 1, j = y2 - 1; i < x; i++, j--) {
+					hitCoordinates[counter][0] = i;
+					hitCoordinates[counter][1] = j;
+					counter++;
+				}
+			}
+			for (int i = 0; i < counter; i++) {
+				System.out.println(hitCoordinates[i][0]);
+				System.out.println(hitCoordinates[i][1]);
+				if (fields[hitCoordinates[i][0]][hitCoordinates[i][1]].isPiece()) {
+					fields[hitCoordinates[i][0]][hitCoordinates[i][1]].setPiece(null);
+					pieces[hitCoordinates[i][0]][hitCoordinates[i][1]] = null;
+					gridPane.getChildren().remove(imageViewsPieces[hitCoordinates[i][0]][hitCoordinates[i][1]]);
+				}
+			}
+		}
+	}
+	
+4. Klasa Field
+	PROBLEM:
+	Zmienne klasy Field powinny być prywatne, niepotrzebny jest również konstruktor domyślny, który nic nie ustawia, w sytuacji, gdy dostnępny jest konstruktor z parametrami - usunięcie go uniemożliwi utworzenie pola niezawierającego informacji o swoim położeniu, aktywności, czy typie - takie obiekty nie powinny powstawać.
+	
+
+	int x;
+	int y;
+	boolean isPiece;
+	boolean isActive;
+	public enum Type {NORMAL, END};
+	Type type;
+	Piece piece;
+	static Image black;
+	static Image orange;
+	
+	public Field()
+	{
+		
+	}
+	
+	ROZWIĄZANIE:
+	private int x;
+	private int y;
+	private boolean isPiece;
+	private boolean isActive;
+	public enum Type {NORMAL, END};
+	private Type type;
+	private Piece piece;
+	static Image black;
+	static Image orange;
